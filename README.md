@@ -1,4 +1,4 @@
-# weather-interaction
+# Weather Embedded System Interaction
 
 The following Arduino codes only work for Arduino Boards 1.6.7,
 Please download the respective Arduino Board by going into the Arduino IDE App, then to the Tools menu, Board -> Boards Manager and
