@@ -1,5 +1,4 @@
 # Weather Embedded System Interaction
-
 ![alt text](https://raw.githubusercontent.com/tidusdavid/weather-interaction/master/Resources/Architecture.png)
 
 The following Arduino codes only work for Arduino Boards 1.6.7,
