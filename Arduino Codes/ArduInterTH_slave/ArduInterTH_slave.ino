@@ -7,7 +7,7 @@
 //Authors: David Velasquez (mail: dvelas25@eafit.edu.co)
 //         Raul Mazo       (mail: raul.mazo@univ-paris1.fr)
 //Version: 2.0
-//Date: 30/11/2016
+//Date: 26/10/2017
 
 //Required Libraries
 #include <SPI.h>
@@ -24,7 +24,7 @@
 
 //Pin I/O Labeling
 #define DHTPIN 2  //DHT sensor connected to Arduino digital pin 2
-#define LR 5  //Red LED connected to Arduino pin 5
+#define LR 6  //Red LED connected to Arduino pin 5
 
 //Constants
 const unsigned long postingInterval = 2 * 1000; //Delay between TWX POST updates, 2000 milliseconds
@@ -36,15 +36,15 @@ const unsigned int tilt = 500;  //Constant for tilting initialized in 500 msec
 unsigned int state = ESLEEP;  //Variable for storing the current state of the FEM, initialized in ESLEEP state.
 unsigned int statetilt = ELOFF;  //Variable for storing the current state of the FSM of tilting
 //->WiFi Shield Vars
-char ssid[] = "cel221";  //Network SSID (name)
+char ssid[] = "IoT-B19";  //Network SSID (name)
 //char ssid[] = "Bbox-221";  //Network SSID (name)
-char pass[] = "lqpavpasv";  //Network password
+char pass[] = "meca2017*";  //Network password
 //char ssid[] = "Private";  //Network SSID (name)
 //char pass[] = "eafit321*";  //Network password
 int status = WL_IDLE_STATUS;  //Network status
 WiFiClient client;
 //->TWX Vars
-char* host = "molpe.eafit.edu.co";  //TWX server (do not include http://)
+char* host = "iot.dis.eafit.edu.co";  //TWX server (do not include http://)
 char* appKey = "84247955-b951-446f-a864-9aa795d02837";  //API Key from TWX
 char* thingName = "termo_slave_thing";  //Name of your Thing in TWX
 char* serviceName = "termo_master_service";  //Name of your Service in TWX
@@ -123,20 +123,30 @@ void POST() {
 void POST_send(int sensorCount, char* sensorNames[], float values[]) {
   //build the String with the data that you will send
   //through REST calls to your TWX server
-  char data[80];
-  strcpy(data, "?appKey=");
-  strcat(data, appKey);
-  strcat(data, "&method=post&x-thingworx-session=true");
   // if you get a connection, report back via serial:
-  if (client.connect(host, 8080)) {
+  String body = "";
+  for (int idx = 0; idx < sensorCount; idx++) {
+    if (idx != 0) body += "&";
+    body += sensorNames[idx];
+    body += "=";
+    body += values[idx];
+  }
+  if (client.connect(host, 80)) {
     //Serial.println("connected");
     // send the HTTP POST request:
     client.print("POST /Thingworx/Things/");
     client.print(thingName);
     client.print("/Services/");
     client.print(serviceName);
-    client.print(data);
-    client.print("<");
+    client.println(" HTTP/1.1");
+    client.print("Host: ");
+    client.println(host);
+    client.println("Content-Type: application/x-www-form-urlencoded");
+    client.println("Content-Length: " + String(body.length()));
+    client.println("Connection: close");
+    client.println("appKey: " + String(appKey) + "\r\n");
+    client.println(body + "\r\n");
+
     for (int idx = 0; idx < sensorCount; idx++)
     {
       client.print("&");
@@ -144,43 +154,32 @@ void POST_send(int sensorCount, char* sensorNames[], float values[]) {
       client.print("=");
       client.print(values[idx]);
     }
-    client.print(">");
-    client.println(" HTTP/1.1");
-    client.print("Host: ");
-    client.println(host);
-    client.println("Content-Type: text/html");
-    client.println();
-//    int timeout = 0;
-//    while (!client.available() && timeout > 5000) {
-//      delay(1);
-//      timeout++;
-//    }
-//    while (client.available()) {
-//      char c = client.read();
-//      Serial.write(c);
-//    }
+    client.println(); //Double ENTER for sending all POST REQUEST
+    //    int timeout = 0;
+    //    while (!client.available() && timeout < 5000) { //Available is for checking if there are bytes available to be read in the WiFi Client
+    //      delay(1);
+    //      timeout++;
+    //    }
+    //    while (client.available()) {
+    //      char c = client.read();
+    //      Serial.write(c);  //Uncomment if you want to see the Response from server
+    //    }
+    //    client.stop();
+    //
+    //    // print the request out  //Uncomment if you want to see how the POST request was made
+    //    Serial.print("POST /Thingworx/Things/");
+    //    Serial.print(thingName);
+    //    Serial.print("/Services/");
+    //    Serial.print(serviceName);
+    //    Serial.println(" HTTP/1.1");
+    //    Serial.print("Host: ");
+    //    Serial.println(host);
+    //    Serial.println("Content-Type: application/x-www-form-urlencoded");
+    //    Serial.println("Content-Length: " + String(body.length()));
+    //    Serial.println("Connection: close");
+    //    Serial.println("appKey: " + String(appKey) + "\r\n");
+    //    Serial.println(body + "\r\n");
     client.stop();
-
-    // print the request out
-//    Serial.print("POST /Thingworx/Things/");
-//    Serial.print(thingName);
-//    Serial.print("/Services/");
-//    Serial.print(serviceName);
-//    Serial.print(data);
-//    Serial.print("<");
-//    for (int idx = 0; idx < sensorCount; idx++)
-//    {
-//      Serial.print("&");
-//      Serial.print(sensorNames[idx]);
-//      Serial.print("=");
-//      Serial.print(values[idx]);
-//    }
-//    Serial.print(">");
-//    Serial.println(" HTTP/1.1");
-//    Serial.print("Host: ");
-//    Serial.println(host);
-//    Serial.println("Content-Type: text/html");
-//    Serial.println();
   }
   else {
     // kf you didn't get a connection to the server:
@@ -278,7 +277,7 @@ void loop() {
     case ESLEEP: //Sleep State
       //Physical outputs state
       digitalWrite(LR, LOW);
-      
+
       //Variables state
 
       //Transitions questions
